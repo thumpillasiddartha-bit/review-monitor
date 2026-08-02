@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ReviewGuard — Fake Review Monitor</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ── AUTH PAGE ─────────────────────────────────────────── -->
+<div id="auth-page" class="auth-page">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="logo-icon">🛡</div>
+      ReviewGuard
+    </div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-tab="login">Sign In</button>
+      <button class="auth-tab" data-tab="register">Register</button>
+    </div>
+
+    <!-- Login -->
+    <div id="login-form">
+      <div class="flex flex-col gap-16 mb-20">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input id="login-email" class="form-input" type="email" placeholder="you@example.com" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input id="login-pwd" class="form-input" type="password" placeholder="••••••••" />
+        </div>
+      </div>
+      <button id="btn-login" class="btn btn-primary w-full" style="justify-content:center">Sign In</button>
+      <div style="margin-top:16px;text-align:center;font-size:0.82rem;color:var(--text3)">
+        Demo: <strong style="color:var(--text2)">admin@reviewmonitor.com</strong> / <strong style="color:var(--text2)">Admin@123</strong>
+        <br>
+        <button onclick="seedDB()" class="btn btn-ghost btn-sm" style="margin-top:8px">🌱 Seed Database</button>
+      </div>
+    </div>
+
+    <!-- Register -->
+    <div id="register-form" class="hidden">
+      <div class="flex flex-col gap-16 mb-20">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input id="reg-name" class="form-input" placeholder="Your name" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input id="reg-email" class="form-input" type="email" placeholder="you@example.com" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input id="reg-pwd" class="form-input" type="password" placeholder="••••••••" />
+        </div>
+      </div>
+      <button id="btn-register" class="btn btn-primary w-full" style="justify-content:center">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── APP SHELL ──────────────────────────────────────────── -->
+<div id="app-shell" class="app-shell hidden">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <div class="logo-icon">🛡</div>
+        ReviewGuard
+      </div>
+    </div>
+
+    <nav class="sidebar-nav" id="sidebar-nav">
+      <!-- Populated by JS -->
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar" id="sidebar-user-avatar">U</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebar-user-name">User</div>
+          <div class="user-role" id="sidebar-user-role">user</div>
+        </div>
+        <button onclick="logout()" title="Logout" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:1rem;padding:4px" title="Sign out">⇠</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <div class="topbar-title">Dashboard</div>
+      <div class="topbar-actions">
+        <button onclick="seedDB()" class="btn btn-ghost btn-sm">🌱 Seed DB</button>
+      </div>
+    </header>
+
+    <!-- ── DASHBOARD ─────────────────────────────────────── -->
+    <div id="page-dashboard" class="page">
+      <div class="page-inner">
+        <div class="section-header mb-24">
+          <div>
+            <h2 class="section-title">Overview</h2>
+            <p class="section-sub">Real-time review monitoring & fake detection analytics</p>
+          </div>
+          <button onclick="loadDashboard()" class="btn btn-ghost btn-sm">↻ Refresh</button>
+        </div>
+        <div id="dashboard-content">
+          <div class="empty-state"><div class="spinner" style="width:32px;height:32px"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PRODUCTS ───────────────────────────────────────── -->
+    <div id="page-products" class="page">
+      <div class="page-inner">
+        <div class="section-header mb-24">
+          <div>
+            <h2 class="section-title">Products</h2>
+            <p class="section-sub">Browse products and read verified reviews</p>
+          </div>
+          <button onclick="loadProducts()" class="btn btn-ghost btn-sm">↻ Refresh</button>
+        </div>
+        <div id="products-grid" class="product-grid"></div>
+      </div>
+    </div>
+
+    <!-- ── SUBMIT REVIEW ──────────────────────────────────── -->
+    <div id="page-submit" class="page">
+      <div class="page-inner">
+        <div class="section-header mb-24">
+          <div>
+            <h2 class="section-title">Write a Review</h2>
+            <p class="section-sub">Share your experience — our AI analyses every submission in real time</p>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start">
+          <div class="card">
+            <h3 style="margin-bottom:20px">Review Details</h3>
+
+            <div class="flex flex-col gap-16">
+              <div class="form-group">
+                <label class="form-label">Product</label>
+                <select id="review-product-select" class="form-select">
+                  <option value="">Select a product…</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Your Rating</label>
+                <div class="flex gap-12 items-center">
+                  <div id="star-input" class="stars" style="font-size:1.8rem"></div>
+                  <span id="selected-rating" class="text-muted text-sm">Click to rate</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Your Review</label>
+                <textarea id="review-text" class="form-textarea" rows="6" placeholder="Describe your experience with this product in detail…"></textarea>
+              </div>
+
+              <button id="submit-review-btn" class="btn btn-primary" style="align-self:flex-start">
+                🚀 Submit Review
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <div class="card mb-16">
+              <h4 style="margin-bottom:12px">🤖 How Detection Works</h4>
+              <div class="flex flex-col gap-10" style="font-size:0.85rem;color:var(--text2)">
+                <div class="flex gap-8"><span>1.</span><span><strong>Tokenisation</strong> — splits text into individual words</span></div>
+                <div class="flex gap-8"><span>2.</span><span><strong>Stop word removal</strong> — filters common filler words</span></div>
+                <div class="flex gap-8"><span>3.</span><span><strong>Sentiment analysis</strong> — detects unnaturally extreme emotions</span></div>
+                <div class="flex gap-8"><span>4.</span><span><strong>Keyword matching</strong> — flags promotional & suspicious phrases</span></div>
+                <div class="flex gap-8"><span>5.</span><span><strong>Duplicate detection</strong> — cosine similarity against existing reviews</span></div>
+                <div class="flex gap-8"><span>6.</span><span><strong>Structural checks</strong> — caps, length, punctuation anomalies</span></div>
+              </div>
+              <div style="margin-top:16px;padding:12px;background:var(--bg3);border-radius:var(--radius);font-size:0.82rem">
+                <div style="margin-bottom:6px;font-weight:700">Score Thresholds</div>
+                <div class="flex gap-8 mb-4"><span class="badge badge-green">0–19</span> Legitimate → Auto-approved</div>
+                <div class="flex gap-8 mb-4"><span class="badge badge-yellow">20–39</span> Mildly suspicious → Flagged</div>
+                <div class="flex gap-8 mb-4"><span class="badge badge-orange">40–69</span> Suspicious → Admin review</div>
+                <div class="flex gap-8"><span class="badge badge-red">70+</span> Highly fake → Auto-deleted</div>
+              </div>
+            </div>
+
+            <div id="analysis-output"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MY REVIEWS ─────────────────────────────────────── -->
+    <div id="page-my-reviews" class="page">
+      <div class="page-inner">
+        <div class="section-header mb-24">
+          <div>
+            <h2 class="section-title">My Reviews</h2>
+            <p class="section-sub">All reviews you've submitted and their detection status</p>
+          </div>
+          <button onclick="loadMyReviews()" class="btn btn-ghost btn-sm">↻ Refresh</button>
+        </div>
+        <div id="my-reviews-list"></div>
+      </div>
+    </div>
+
+    <!-- ── ADMIN QUEUE ─────────────────────────────────────── -->
+    <div id="page-admin-queue" class="page">
+      <div class="page-inner">
+        <div class="section-header mb-20">
+          <div>
+            <h2 class="section-title">Review Queue</h2>
+            <p class="section-sub">Reviews flagged for manual inspection · <span id="queue-total">0</span> pending</p>
+          </div>
+          <button onclick="loadAdminQueue()" class="btn btn-ghost btn-sm">↻ Refresh</button>
+        </div>
+
+        <div class="flex gap-8 mb-20">
+          <button class="btn btn-ghost btn-sm queue-filter active" data-status="admin_review">👁 Admin Review</button>
+          <button class="btn btn-ghost btn-sm queue-filter" data-status="flagged">⚑ Flagged</button>
+          <button class="btn btn-ghost btn-sm queue-filter" data-status="auto_deleted">🗑 Auto-Deleted</button>
+        </div>
+
+        <div id="admin-queue-list"></div>
+      </div>
+    </div>
+
+    <!-- ── ADMIN ALL REVIEWS ──────────────────────────────── -->
+    <div id="page-admin-all" class="page">
+      <div class="page-inner">
+        <div class="section-header mb-20">
+          <div>
+            <h2 class="section-title">All Reviews</h2>
+            <p class="section-sub">Full review database with filtering</p>
+          </div>
+          <div class="flex gap-10">
+            <select id="all-status-filter" class="form-select" style="width:auto">
+              <option value="">All statuses</option>
+              <option value="approved">Approved</option>
+              <option value="admin_review">Admin Review</option>
+              <option value="flagged">Flagged</option>
+              <option value="auto_deleted">Auto-Deleted</option>
+              <option value="deleted">Deleted</option>
+            </select>
+            <button onclick="loadAdminAll()" class="btn btn-ghost btn-sm">↻</button>
+          </div>
+        </div>
+        <div id="admin-all-list"></div>
+      </div>
+    </div>
+
+    <!-- ── ADMIN USERS ─────────────────────────────────────── -->
+    <div id="page-admin-users" class="page">
+      <div class="page-inner">
+        <div class="section-header mb-24">
+          <div>
+            <h2 class="section-title">Users</h2>
+            <p class="section-sub">Manage user accounts and ban suspicious actors</p>
+          </div>
+          <button onclick="loadAdminUsers()" class="btn btn-ghost btn-sm">↻ Refresh</button>
+        </div>
+        <div id="admin-users-list"></div>
+      </div>
+    </div>
+
+    <!-- ── ADMIN PRODUCTS ──────────────────────────────────── -->
+    <div id="page-admin-products" class="page">
+      <div class="page-inner">
+        <div class="section-header mb-24">
+          <div>
+            <h2 class="section-title">Products Management</h2>
+            <p class="section-sub">Add and manage products in the catalogue</p>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 2fr;gap:24px;align-items:start">
+          <div class="card">
+            <h4 style="margin-bottom:16px">Add New Product</h4>
+            <div class="flex flex-col gap-14">
+              <div class="form-group">
+                <label class="form-label">Product Name</label>
+                <input id="new-product-name" class="form-input" placeholder="e.g. Wireless Headphones" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Category</label>
+                <input id="new-product-cat" class="form-input" placeholder="e.g. Electronics" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea id="new-product-desc" class="form-textarea" rows="3" placeholder="Short description…"></textarea>
+              </div>
+              <button onclick="addProduct()" class="btn btn-primary btn-sm">+ Add Product</button>
+            </div>
+          </div>
+          <div id="admin-products-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ACTIVITY LOG ────────────────────────────────────── -->
+    <div id="page-admin-activity" class="page">
+      <div class="page-inner">
+        <div class="section-header mb-24">
+          <div>
+            <h2 class="section-title">Activity Log</h2>
+            <p class="section-sub">Full audit trail of detection actions and admin decisions</p>
+          </div>
+          <button onclick="loadActivity()" class="btn btn-ghost btn-sm">↻ Refresh</button>
+        </div>
+        <div class="card">
+          <div id="activity-list"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── MODALS ─────────────────────────────────────────────── -->
+<div id="modal-product-reviews" class="modal-overlay" onclick="if(event.target===this)closeModal('modal-product-reviews')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="product-reviews-title">Product Reviews</h3>
+      <button class="modal-close" onclick="closeModal('modal-product-reviews')">✕</button>
+    </div>
+    <div id="product-reviews-list"></div>
+  </div>
+</div>
+
+<!-- ── TOAST CONTAINER ────────────────────────────────────── -->
+<div id="toast-container" class="toast-container"></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
